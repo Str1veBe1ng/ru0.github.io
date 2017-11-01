@@ -1,0 +1,40 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><title> SSL协议 · ru0</title><meta name="description" content="SSL协议 - ruo"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="/favicon.png"><link rel="stylesheet" href="/css/apollo.css"><link rel="search" type="application/opensearchdescription+xml" href="http://ruos.org/atom.xml" title="ru0"></head><body><div class="wrap"><header><a href="/" class="logo-link"><img src="/favicon.png" alt="logo"></a><ul class="nav nav-list"><li class="nav-list-item"><a href="/" target="_self" class="nav-list-link">BLOG</a></li><li class="nav-list-item"><a href="/archives/" target="_self" class="nav-list-link">ARCHIVE</a></li><li class="nav-list-item"><a href="http://github.com" target="_blank" class="nav-list-link">HACKMIND</a></li><li class="nav-list-item"><a href="https://github.com/ru0" target="_blank" class="nav-list-link">GITHUB</a></li><li class="nav-list-item"><a href="/atom.xml" target="_self" class="nav-list-link">RSS</a></li></ul></header><main class="container"><div class="post"><article class="post-block"><h1 class="post-title">SSL协议</h1><div class="post-info">Apr 8, 2015</div><div class="post-content"><p>SSL (Secure Socket Layer)安全套接字层协议<br>    TLS (Transport Layer Security)传输层安全协议</p>
+<p><img src="https://blog.cloudflare.com/content/images/2014/Sep/keyless-comic-v1.gif" alt=""></p>
+<p>第一步，爱丽丝给出协议版本号、一个客户端生成的随机数（Client random），以及客户端支持的加密方法。<br>第二步，鲍勃确认双方使用的加密方法，并给出数字证书、以及一个服务器生成的随机数（Server random）。<br>第三步，爱丽丝确认数字证书有效，然后生成一个新的随机数（Premaster secret），并使用数字证书中的公钥，加密这个随机数，发给鲍勃。<br>第四步，鲍勃使用自己的私钥，获取爱丽丝发来的随机数（即Premaster secret）。<br>第五步，爱丽丝和鲍勃根据约定的加密方法，使用前面的三个随机数，生成”对话密钥”（session key），用来加密接下来的整个对话过程。</p>
+<p><img src="https://blog.cloudflare.com/content/images/2014/Sep/ssl_handshake_rsa.jpg" alt=""></p>
+<p>Tip:<br>1，生成对话密钥一共需要三个随机数，第三个发出的随机数是用服务端公钥加密的，除了客户端知道和服务端能解密出来外其他人不知道。<br>2，握手之后的对话使用”对话密钥”加密（对称加密），服务器的公钥和私钥只用于加密和解密”premaster secret”（非对称加密），无其他作用。<br>3，服务器公钥放在服务器的数字证书之中。</p>
+<p>Diffie-Hellman</p>
+<p><img src="https://blog.cloudflare.com/content/images/2014/Sep/ssl_handshake_diffie_hellman.jpg" alt=""></p>
+<p>curl -k <a href="https://www.baidu.com/img/baidu_jgylogo3.gif" target="_blank" rel="external">https://www.baidu.com/img/baidu_jgylogo3.gif</a></p>
+<p>Wireshark</p>
+<p>192.168.1.5    180.97.33.107 SSL Client Hello<br>180.97.33.107    192.168.1.5    TLSv1.2        Server Hello<br>180.97.33.107    192.168.1.5    TLSv1.2        Certificate, Server Key Exchange（服务端DH参数）, Server Hello Done<br>192.168.1.5    180.97.33.107    TLSv1.2     Client Key Exchange（客户端DH参数）, Change Cipher Spec, Encrypted Handshake Message<br>180.97.33.107    192.168.1.5    TLSv1.2        Change Cipher Spec, Encrypted Handshake Message</p>
+<p>Curl -v 显示交互过程</p>
+<p>* TLSv1.2 (OUT), TLS handshake, Client hello (1):<br>* TLSv1.2 (IN), TLS handshake, Server hello (2):<br>* NPN, negotiated HTTP1.1<br>* TLSv1.2 (IN), TLS handshake, Certificate (11):<br>* TLSv1.2 (IN), TLS handshake, Server key exchange (12):<br>* TLSv1.2 (IN), TLS handshake, Server finished (14):<br>* TLSv1.2 (OUT), TLS handshake, Client key exchange (16):<br>* TLSv1.2 (OUT), TLS change cipher, Client hello (1):<br>* TLSv1.2 (OUT), TLS handshake, Unknown (67):<br>* TLSv1.2 (OUT), TLS handshake, Finished (20):<br>* TLSv1.2 (IN), TLS change cipher, Client hello (1):<br>* TLSv1.2 (IN), TLS handshake, Finished (20):<br>* SSL connection using TLSv1.2 / ECDHE-RSA-AES128-GCM-SHA256</p>
+<a id="more"></a>
+<h3 id="证书生成"><a href="#证书生成" class="headerlink" title="证书生成"></a>证书生成</h3><p>1，自签名证书</p>
+<p>生成私钥<br><code>openssl genrsa -des3 -out server.key 4096</code></p>
+<p>去除key口令<br><code>openssl rsa -in server.key -out server.key</code></p>
+<p>生成CSR<br><code>openssl req -new -key server.key -out server.csr -config openssl.cfg -subj &quot;/C=CN/ST=SC/L=CD/O=CerTest/OU=CerTest/CN=mm.ru0.pw&quot;</code></p>
+<p>CN = baidu.com 通用名称<br>O = BeiJing Baidu Netcom Science Technology Co., Ltd 组织单位<br>OU = service operation department. 组织<br>L = beijing 城市<br>S = beijing 省/州名<br>C = CN 国家/地区</p>
+<p>生成自签名证书<br><code>openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt</code></p>
+<blockquote>
+<p>openssl 生成私钥，通过私钥生成csr。权威证书机构通过这两个文件给你生成cer证书文件。但自建CA可为自己的请求签发证书，当然这是不可信的。当将CA导入“受信任的根证书颁发机构”后CA便认为该证书是可信的了。burp：8080的证书导入系统后相当于自己信任了自己。</p>
+</blockquote>
+<p>2，自建CA签发证书</p>
+<p>Step1:生成根CA</p>
+<p>生成随机数<br><code>openssl rand -out private/.rand 1000</code></p>
+<p>生成私钥<br><code>openssl genrsa -aes256 -out cakey.pem 4096</code></p>
+<p>生成CSR<br><code>openssl req -new -key cakey.pem -out ca.csr -subj &quot;/C=CN/ST=SC/O=CerTest/OU=Test Certificate Authority/CN=Test Root CA&quot; -config openssl.cfg</code></p>
+<p>自签发根证书v3<br><code>openssl x509 -req -days 365 -sha256 -extfile openssl.cfg -extensions v3_ca -signkey cakey.pem -in ca.csr -out ca.crt</code></p>
+<p>Step2:生成服务端证书<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">openssl genrsa -aes256 -out server-key.pem 2048</div><div class="line">openssl req -new -key server-key.pem -out server.csr -subj "/O=CerTest/OU=Test Certificate Authority/CN=*.baidu.com" -config openssl.cfg</div></pre></td></tr></table></figure></p>
+<p>Step3:签发证书<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">openssl x509 -req -days 365 -sha256 -extfile openssl.cfg -extensions v3_req -CA ca.crt -CAkey cakey.pem -CAserial ca.srl -CAcreateserial -in server.csr -out server.crt</div></pre></td></tr></table></figure></p>
+<p>？<br>openssl ca -in server.csr -out server.crt -cert ca.crt -keyfile cakey.pem -extfile openssl.cfg -extensions v3_req</p>
+<p>转换成PKCS12格式供Burp使用<br><code>openssl pkcs12 -export -inkey server-key.pem -in server.crt -out server.pfx</code></p>
+<p><img src="http://i.imgur.com/RdLCQVe.png" alt=""></p>
+<p>将CA导入受信任的根证书颁发机构后若火狐仍不信任则在火狐证书管理器中对其编辑信任。</p>
+<p><img src="http://i.imgur.com/A3FSl0q.png" alt=""></p>
+<p>Chrome https代理死活出错解决办法</p>
+<p>Chrome -&gt; Fiddler -&gt; Burp</p>
+<p>配置Fiddler Gateway指向Burp</p>
+<p>Manual Proxy Configuration:<br><a href="http://127.0.01:8080" target="_blank" rel="external">http://127.0.01:8080</a></p>
+</div></article></div></main><footer><div class="paginator"><a href="/2015/04/08/XSS/" class="next">NEXT</a></div><div class="copyright"><p>© 2015 - 2017 <a href="http://ruos.org">ruo</a>.</p></div></footer></div><script async src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML" integrity="sha384-crwIf/BuaWM9rM65iM+dWFldgQ1Un8jWZMuh3puxb8TOY9+linwLoI7ZHZT+aekW" crossorigin="anonymous"></script></body></html>
