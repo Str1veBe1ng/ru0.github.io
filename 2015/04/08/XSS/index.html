@@ -89,13 +89,22 @@
 <li><p>AND Check CSRF token </p>
 </li>
 </ol>
-<blockquote>
-<p>same-origin policy 同源策略:同协议、域名、端口,不能跨域访问。</p>
+<h4 id="same-origin-policy"><a href="#same-origin-policy" class="headerlink" title="same-origin policy"></a>same-origin policy</h4><blockquote>
+<p>同源策略:同协议、域名、端口,不能跨域访问。</p>
 </blockquote>
 <p><img src="http://i.imgur.com/dswMO29.png" alt=""></p>
-<p>a.com<br>允许其他域访问本域资源<br><figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="meta">&lt;?php</span> header(<span class="string">"Access-Control-Allow-Origin: *"</span>); <span class="meta">?&gt;</span></div></pre></td></tr></table></figure></p>
-<p>b.com<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$.get(&quot;http://b.com/test.php&quot;, function(data)&#123;</div><div class="line">alert(data);</div><div class="line">&#125;);</div></pre></td></tr></table></figure></p>
-<p>AJAX跨域请求</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$.getJSON(&quot;http://www.runoob.com/try/ajax/jsonp.php?jsoncallback=?&quot;, function(data)&#123; // 对返回的json的处理代码 &#125;);</div></pre></td></tr></table></figure>
-<h2 id="跨域策略文件"><a href="#跨域策略文件" class="headerlink" title="跨域策略文件"></a>跨域策略文件</h2><p>crossdomain.xml</p>
-</div></article></div></main><footer><div class="paginator"><a href="/2015/04/08/SSL/" class="prev">PREV</a></div><div class="copyright"><p>© 2015 - 2017 <a href="http://ruos.org">ruo</a>.</p></div></footer></div><script async src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML" integrity="sha384-crwIf/BuaWM9rM65iM+dWFldgQ1Un8jWZMuh3puxb8TOY9+linwLoI7ZHZT+aekW" crossorigin="anonymous"></script></body></html>
+<p>如何实现跨域访问？</p>
+<ol>
+<li>Access-Control-Allow-Origin 头</li>
+</ol>
+<p>a.com 允许其他域访问本域资源<br><figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="meta">&lt;?php</span> header(<span class="string">"Access-Control-Allow-Origin: *"</span>); <span class="meta">?&gt;</span></div></pre></td></tr></table></figure></p>
+<p>b.com<br><figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$.get(<span class="string">"http://a.com/test.php"</span>, <span class="function"><span class="keyword">function</span>(<span class="params">data</span>)</span>&#123;</div><div class="line">alert(data);</div><div class="line">&#125;);</div></pre></td></tr></table></figure></p>
+<ol>
+<li><p>getJSON</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$.getJSON(<span class="string">"http://www.runoob.com/try/ajax/jsonp.php?jsoncallback=?"</span>, <span class="function"><span class="keyword">function</span>(<span class="params">data</span>)</span>&#123; <span class="comment">// 对返回的json的处理代码 &#125;);</span></div></pre></td></tr></table></figure>
+</li>
+<li><p>iframe</p>
+</li>
+</ol>
+<h4 id="跨域策略文件"><a href="#跨域策略文件" class="headerlink" title="跨域策略文件"></a>跨域策略文件</h4><p>crossdomain.xml</p>
+</div></article></div></main><footer><div class="paginator"><a href="/2017/11/01/SPNs/" class="prev">上一篇</a><a href="/2015/04/08/SSL/" class="next">下一篇</a></div><div class="copyright"><p>© 2015 - 2017 <a href="http://ruos.org">ruo</a>.</p></div></footer></div><script async src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML" integrity="sha384-crwIf/BuaWM9rM65iM+dWFldgQ1Un8jWZMuh3puxb8TOY9+linwLoI7ZHZT+aekW" crossorigin="anonymous"></script></body></html>
