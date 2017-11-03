@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>ru0</title>
   
-  
+  <subtitle>记录学习点滴</subtitle>
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://ruos.org/"/>
