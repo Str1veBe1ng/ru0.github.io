@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://ruos.org/2017/02/08/WMI/</loc>
+    
+    <lastmod>2017-11-03T06:49:46.122Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://ruos.org/2015/04/08/XSS/</loc>
     
     <lastmod>2017-11-03T03:56:11.924Z</lastmod>
