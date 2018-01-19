@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><title>Iptables | ru0</title><meta name="description" content="Iptables - ruo"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="/favicon.png"><link rel="stylesheet" href="/css/theme.css"><link rel="search" type="application/opensearchdescription+xml" href="/atom.xml" title="ru0"></head><body><div class="wrap"><header><h1 class="branding"><a href="/" title="ru0"><img class="logo-image" src="/logo.png" alt="logo"></a></h1><ul class="nav nav-list"><li class="nav-list-item"><a class="nav-list-link" href="/" target="_self">HOME</a></li><li class="nav-list-item"><a class="nav-list-link" href="/archives" target="_self">ARCHIVES</a></li><li class="nav-list-item"><a class="nav-list-link" href="/hmind" target="_self">HACKMIND</a></li><li class="nav-list-item"><a class="nav-list-link" href="https://github.com/ru0" target="_blank">GITHUB</a></li><li class="nav-list-item"><a class="nav-list-link" href="/atom.xml" target="_self">RSS</a></li></ul></header><main class="container"><div class="post"><article class="post-block"><h1 class="post-title">Iptables</h1><div class="post-info"><a></a>2018-01-19</div><div class="post-content"><p>Chain</p>
+<ol>
+<li>PREROUTING (路由前)</li>
+<li>INPUT (数据包流入口)</li>
+<li>FORWARD (转发)</li>
+<li>OUTPUT (数据包出口)</li>
+<li>POSTROUTING (路由后)</li>
+</ol>
+<p><img src="https://i.imgur.com/CAjJ7Y1.gif" alt=""></p>
+<p>查看路由表<br>iptables -L -n -v<br>iptables -L -n –line-number<br>iptables -t nat -vnL</p>
+<p>设置默认策略<br>iptables -P INPUT (DROP|ACCEPT)  默认是关的/默认是开的</p>
+<p>清空规则链<br>iptables -t nat -F 清空nat表的所有链<br>iptables -t nat -F PREROUTING<br>iptables -F</p>
+<p>新建一个链<br>iptables -N NEWCHAINNAME</p>
+<p>-s：指定作为源地址匹配，这里不能指定主机名称，必须是IP<br>IP | IP/MASK | 0.0.0.0/0.0.0.0<br>而且地址可以取反，加一个“!”表示除了哪个IP之外<br>-d：表示匹配目标地址<br>-p：用于匹配协议的（这里的协议通常有3种，TCP/UDP/ICMP）<br>-i eth0：从这块网卡流入的数据<br>流入一般用在INPUT和PREROUTING上<br>-o eth0：从这块网卡流出的数据<br>流出一般在OUTPUT和POSTROUTING上</p>
+<p>–dport 22 指定目的端口<br>–sport 22 指定源端口<br>-p tcp 指定协议</p>
+<p>-j ACTION  DROP/REJECT/ACCEPT/DNAT/SNAT/MASQUERADE/REDIRECT</p>
+<p>只允许192.168.6.1访问本机ssh服务<br>iptables -t filter -A INPUT -s 192.168.6.1 -p tcp –dport 22 -j ACCEPT</p>
+<p>除了192.168.6.1地址拒绝所有其他访问22端口<br>iptables -A INPUT ! -s 192.168.6.1 -p tcp –dport 22 -j DROP</p>
+<p>删除第4条（delete）<br>iptables -D INPUT 4</p>
+<p>删除FORWARD<br>iptables -D FORWARD 1</p>
+<p>比如进来的只允许状态为NEW和ESTABLISHED的进来，出去只允许ESTABLISHED的状态出去，这就可以将比较常见的反弹式木马有很好的控制机制。</p>
+<p>nat功能<br>iptables -t nat -A POSTROUTING -s 192.168.10.0/24 -j MASQUERADE</p>
+<p>nat之后，将访问192.168.10.18 80端口定向到nat后的172.16.100.2<br>iptables -t nat -A PREROUTING -d 192.168.10.18 -p tcp –dport 80 -j DNAT –todestination 172.16.100.2</p>
+<p>将访问80端口转发到本地端口<br>iptables -t nat -A PREROUTING -p tcp –destination-port 80 -j REDIRECT –to-port <sslstrip listenport=""></sslstrip></p>
+<p>DNAT 端口映射<br>iptables -t nat -A PREROUTING -d 公网IP -p TCP –dport 80 -j DNAT –to-destination 10.31.2.1</p>
+<p>删除nat PREROUTING<br>iptables -t nat -D PREROUTING <num></num></p>
+<p>在INPUT第三条后面插入（insert）<br>iptables -I INPUT 3 -p tcp –dport 21 -j ACCEPT</p>
+<p>修改<br>iptables -R INPUT 3 -j DROP</p>
+<p>默认规则<br>iptables -A INPUT -j ACCEPT</p>
+<p>保存<br>iptables-save<br>/etc/sysconfig/iptables</p>
+<p>恢复<br>iptables-restore</p>
+<p>每30s 5个连接（rcheck是接收到第1个数据包时开始计时，10s内仅限3次连接，后续的包丢弃）<br>iptables -R INPUT 2 -p icmp -m recent –update –seconds 10 –hitcount 3 –name PINGTEST –rsource -j DROP<br>-A INPUT -p icmp -m recent –set –name PINGTEST –rsource -j ACCEPT</p>
+<p>控制单个IP的最大并发连接数 &lt; 10<br>iptables -A INPUT -p tcp –dport 80 -m connlimit –connlimit-above 10 -j REJECT</p>
+<p>控制单个IP在一定的时间内允许新建立的连接数 15/m<br>-A INPUT -p tcp -m conntrack –ctstate NEW -m limit –limit 60/s –limit-burst 20 -j ACCEPT<br>-A INPUT -p tcp -m conntrack –ctstate NEW -j DROP</p>
+<p>过滤ip<br>iptables -I INPUT -s 121.69.131.144 -j DROP</p>
+<p>CentOS</p>
+<p>/sbin/iptables -I INPUT -p tcp –dport 8080 -j ACCEPT #开启8080端口<br>/etc/rc.d/init.d/iptables save #保存配置<br>/etc/rc.d/init.d/iptables restart #重启服务</p>
+<p>/etc/init.d/iptables status</p>
+</div></article></div></main><footer><div class="paginator"><a class="next" href="/2017/12/14/名称欺骗中间人攻击/">next</a></div><div class="copyright"><p>&copy; 2018 <a href="http://ruos.org">ruo</a>.<br>Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> &amp; <a href="https://github.com/Dreyer/hexo-theme-artemis" target="_blank">Artemis</a>.</p></div></footer></div></body></html>
