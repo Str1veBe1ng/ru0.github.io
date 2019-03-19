@@ -4,6 +4,7 @@
 <p>Server（producer） Beats  -&gt; Zookeeper Kafka topic -&gt; (按照业务功能拆分ELK cluster) Logstash (consumer) -&gt; ES -&gt; Kibana (日志敏感信息泄露)</p>
 <p>服务器<br>/etc/hosts<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">30.3.229.120    develk01</div><div class="line">30.3.229.121    develk02</div><div class="line">30.3.229.122    develk03</div><div class="line">30.3.229.123    devkafka01</div><div class="line">30.3.229.124    devkafka02</div><div class="line">30.3.229.125    devkafka03</div></pre></td></tr></table></figure></p>
 <p>添加root用户<br>useradd -u 0 -o -g root -G root -d /root/ user1<br>echo “user1”:”passw0rD” | chpasswd</p>
+<a id="more"></a>
 <h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>升级java至1.8</p>
 <p>卸载低版本java<br>rpm -qa | grep jdk<br>yum -y remove jdk-1.7.0_79-fcs.x86_64<br>yum -y list java*<br>yum -y install java-1.8.0-openjdk.x86_64<br>rpm -i jdk-8u171-linux-x64.rpm<br>rpm -qa | grep logstash<br>rpm -e –nodeps logstash-5.6.10-1.noarch</p>
 <p>版本选择</p>
