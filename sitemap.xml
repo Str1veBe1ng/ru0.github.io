@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://ruos.org/mind/index.html</loc>
+    
+    <lastmod>2019-10-17T09:56:02.252Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://ruos.org/2019/03/19/ELK/</loc>
     
     <lastmod>2019-08-09T06:02:19.248Z</lastmod>
