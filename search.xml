@@ -210,6 +210,53 @@
     </entry>
     
     <entry>
+      <title><![CDATA[HTTPS单向双向认证]]></title>
+      <url>/2018/11/02/HTTPS%E5%8D%95%E5%90%91%E5%8F%8C%E5%90%91%E8%AE%A4%E8%AF%81/</url>
+      <content type="html"><![CDATA[<ul>
+<li>JKS：数字证书库。JKS里有KeyEntry和CertEntry，在库里的每个Entry都是靠别名（alias）来识别的。</li>
+<li>P12：是PKCS12的缩写。同样是一个存储私钥的证书库，由.jks文件导出的，用户在PC平台安装，用于标示用户的身份。</li>
+<li>CER：俗称数字证书，目的就是用于存储公钥证书，任何人都可以获取这个文件 。</li>
+<li>BKS：Android平台专用证书库格式。</li>
+</ul>
+<p>crt转bks</p>
+<p>下载Bouncy Castle，将该文件放到Java\jdk1.8.0_20\jre\lib\ext目录下，或者使用-providerpath指定路径。<br><a href="http://www.bouncycastle.org/latest_releases.html" target="_blank" rel="external">http://www.bouncycastle.org/latest_releases.html</a></p>
+<p>keytool -importcert -v -trustcacerts -alias mykey -file githubcom.crt -keystore keystore.bks -storetype BKS -providerclass org.bouncycastle.jce.provider.BouncyCastleProvider -providerpath bcprov-jdk15on-1.47.jar -storepass testing</p>
+<h1 id="单向认证"><a href="#单向认证" class="headerlink" title="单向认证"></a>单向认证</h1><h3 id="SSL-Pinning"><a href="#SSL-Pinning" class="headerlink" title="SSL Pinning"></a>SSL Pinning</h3><p>在客户端预置服务器公钥证书或者指纹，在和HTTPS请求获取的服务器证书做对比的方式。</p>
+<h1 id="双向验证"><a href="#双向验证" class="headerlink" title="双向验证"></a>双向验证</h1><p>什么是双向认证？举个栗子。</p>
+<blockquote>
+<p>土匪：蘑菇，你哪路？什么价？（什么人？到哪里去？）<br>杨子荣：哈！想啥来啥，想吃奶来了妈妈，想娘家的人，孩子他舅舅来了。（找同行）<br>杨子荣：拜见三爷！<br>土匪：天王盖地虎！（你好大的胆！敢来气你的祖宗？）<br>杨子荣：宝塔镇河妖！（要是那样，叫我从山上摔死，掉河里淹死。）</p>
+</blockquote>
+<p>简单来说，当两个互不认识的人交易的时候，在A说出口令之后，B能说出只有A和B知道的口令。</p>
+<h3 id="生成证书"><a href="#生成证书" class="headerlink" title="生成证书"></a>生成证书</h3><p>1） 生成客户端keystore</p>
+<p><code>keytool -genkeypair -alias client -keyalg RSA -validity 3650 -keypass 123456 -storepass 123456 -keystore client.jks</code></p>
+<p>2） 生成服务端keystore</p>
+<p><code>keytool -genkeypair -alias server -keyalg RSA -validity 3650 -keypass 123456 -storepass 123456 -keystore server.keystore</code></p>
+<p>注意：CN必须与IP地址匹配，否则需要修改host</p>
+<p>3） 导出客户端证书</p>
+<p><code>keytool -export -alias client -file client.cer -keystore client.jks -storepass 123456</code></p>
+<p>4） 导出服务端证书</p>
+<p><code>keytool -export -alias server -file server.cer -keystore server.keystore -storepass 123456</code></p>
+<p>5） 证书交换</p>
+<p>将客户端证书导入服务端keystore中，再将服务端证书导入客户端keystore中，一个keystore可以导入多个证书，生成证书列表。</p>
+<p>生成客户端信任证书库(由服务端证书生成的证书库)：<br><code>keytool -import -v -alias server -file server.cer -keystore truststore.jks -storepass 123456</code></p>
+<p>将客户端证书导入到服务器证书库(使得服务器信任客户端证书)：<br><code>keytool -import -v -alias client -file client.cer -keystore server.keystore -storepass 123456</code></p>
+<p>6） 生成Android识别的BKS库文件</p>
+<p>使用portecle将client.jks和truststore.jks转换成bks格式，放到android客户端的assert目录下。</p>
+<h3 id="配置tomcat"><a href="#配置tomcat" class="headerlink" title="配置tomcat"></a>配置tomcat</h3><p>修改server.xml文件，配置8443端口 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;Connector port=&quot;8443&quot; protocol=&quot;org.apache.coyote.http11.Http11Protocol&quot;</div><div class="line">           maxThreads=&quot;150&quot; SSLEnabled=&quot;true&quot; scheme=&quot;https&quot; secure=&quot;true&quot;</div><div class="line">           clientAuth=&quot;true&quot; sslProtocol=&quot;TLS&quot;</div><div class="line">           keystoreFile=&quot;$&#123;catalina.base&#125;\conf\server.keystore&quot; keystorePass=&quot;123456&quot; </div><div class="line">           truststoreFile=&quot;$&#123;catalina.base&#125;\conf\server.keystore&quot; truststorePass=&quot;123456&quot; /&gt;</div></pre></td></tr></table></figure>
+<p>由于没有客户端证书，浏览器访问将被拒绝。</p>
+<p><img src="https://i.imgur.com/X0cRtx6.png" alt=""></p>
+<h3 id="安卓客户端"><a href="#安卓客户端" class="headerlink" title="安卓客户端"></a>安卓客户端</h3><!-- code -->
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div></pre></td><td class="code"><pre><div class="line">try &#123;</div><div class="line">    // 服务器端需要验证的客户端证书，其实就是客户端的keystore</div><div class="line">    KeyStore keyStore = KeyStore.getInstance(&quot;BKS&quot;);</div><div class="line">    // 客户端信任的服务器端证书</div><div class="line">    KeyStore trustStore = KeyStore.getInstance(&quot;BKS&quot;);</div><div class="line"></div><div class="line">    //读取证书</div><div class="line">    InputStream ksIn = getResources().getAssets().open(&quot;client.bks&quot;);</div><div class="line">    InputStream tsIn = getResources().getAssets().open(&quot;truststore.bks&quot;);</div><div class="line"></div><div class="line">    //加载证书</div><div class="line">    keyStore.load(ksIn,&quot;123456&quot;.toCharArray());</div><div class="line">    trustStore.load(tsIn,&quot;123456&quot;.toCharArray());</div><div class="line">    IOUtils.close(ksIn);</div><div class="line">    IOUtils.close(tsIn);</div><div class="line"></div><div class="line">    //初始化SSLContext</div><div class="line">    SSLContext sslContext = SSLContext.getInstance(&quot;TLS&quot;);</div><div class="line">    TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(&quot;X509&quot;);</div><div class="line">    KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(&quot;X509&quot;);</div><div class="line">    trustManagerFactory.init(trustStore);</div><div class="line">    keyManagerFactory.init(keyStore, &quot;123456&quot;.toCharArray());</div><div class="line">    sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);</div><div class="line"></div><div class="line">    //通过HttpsURLConnection设置链接</div><div class="line">    SSLSocketFactory socketFactory = sslContext.getSocketFactory();</div><div class="line">    HttpsURLConnection.setDefaultSSLSocketFactory(socketFactory);</div><div class="line"></div><div class="line">    URL url = new URL(url);</div><div class="line">    HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();</div><div class="line">    //设置ip授权认证：如果已经安装该证书，可以不设置，否则需要设置</div><div class="line">    conn.setHostnameVerifier(new HostnameVerifier() &#123;</div><div class="line">        @Override</div><div class="line">        public boolean verify(String hostname, SSLSession session) &#123;</div><div class="line">            return true;</div><div class="line">        &#125;</div><div class="line">    &#125;);</div><div class="line">    InputStream inputStream = conn.getInputStream();</div><div class="line">    String content = getString(inputStream);</div><div class="line">    IOUtils.close(inputStream);</div><div class="line">    System.out.println(content);</div><div class="line"></div><div class="line">&#125; catch (Exception e) &#123;</div><div class="line">    e.printStackTrace();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h2 id="Burp-代理"><a href="#Burp-代理" class="headerlink" title="Burp 代理"></a>Burp 代理</h2><p>提取app中的客户端证书，在Burp的Project options -&gt; SSL选项卡Client SSL Certificates栏处导入，之后Burp便可直接访问目标站点。</p>
+<p><img src="https://i.imgur.com/CHvcAzX.png" alt=""></p>
+<p>app客户端依旧使用Xposed JustTrustMe插件绕过服务器证书校验。</p>
+]]></content>
+      
+        
+    </entry>
+    
+    <entry>
       <title><![CDATA[Password Crack Tips]]></title>
       <url>/2018/05/11/Password-Crack-Tips/</url>
       <content type="html"><![CDATA[<h1 id="常用软件密码解密"><a href="#常用软件密码解密" class="headerlink" title="常用软件密码解密"></a>常用软件密码解密</h1><h2 id="Weblogic"><a href="#Weblogic" class="headerlink" title="Weblogic"></a>Weblogic</h2><ol>
@@ -904,53 +951,6 @@
     </entry>
     
     <entry>
-      <title><![CDATA[SSL协议]]></title>
-      <url>/2015/04/08/SSL/</url>
-      <content type="html"><![CDATA[<p>SSL (Secure Socket Layer)安全套接字层协议<br>    TLS (Transport Layer Security)传输层安全协议</p>
-<p><img src="https://blog.cloudflare.com/content/images/2014/Sep/keyless-comic-v1.gif" alt=""></p>
-<p>第一步，爱丽丝给出协议版本号、一个客户端生成的随机数（Client random），以及客户端支持的加密方法。<br>第二步，鲍勃确认双方使用的加密方法，并给出数字证书、以及一个服务器生成的随机数（Server random）。<br>第三步，爱丽丝确认数字证书有效，然后生成一个新的随机数（Premaster secret），并使用数字证书中的公钥，加密这个随机数，发给鲍勃。<br>第四步，鲍勃使用自己的私钥，获取爱丽丝发来的随机数（即Premaster secret）。<br>第五步，爱丽丝和鲍勃根据约定的加密方法，使用前面的三个随机数，生成”对话密钥”（session key），用来加密接下来的整个对话过程。</p>
-<p><img src="https://blog.cloudflare.com/content/images/2014/Sep/ssl_handshake_rsa.jpg" alt=""></p>
-<p>Tip:<br>1，生成对话密钥一共需要三个随机数，第三个发出的随机数是用服务端公钥加密的，除了客户端知道和服务端能解密出来外其他人不知道。<br>2，握手之后的对话使用”对话密钥”加密（对称加密），服务器的公钥和私钥只用于加密和解密”premaster secret”（非对称加密），无其他作用。<br>3，服务器公钥放在服务器的数字证书之中。</p>
-<p>Diffie-Hellman</p>
-<p><img src="https://blog.cloudflare.com/content/images/2014/Sep/ssl_handshake_diffie_hellman.jpg" alt=""></p>
-<p>curl -k <a href="https://www.baidu.com/img/baidu_jgylogo3.gif" target="_blank" rel="external">https://www.baidu.com/img/baidu_jgylogo3.gif</a></p>
-<p>Wireshark</p>
-<p>192.168.1.5    180.97.33.107 SSL Client Hello<br>180.97.33.107    192.168.1.5    TLSv1.2        Server Hello<br>180.97.33.107    192.168.1.5    TLSv1.2        Certificate, Server Key Exchange（服务端DH参数）, Server Hello Done<br>192.168.1.5    180.97.33.107    TLSv1.2     Client Key Exchange（客户端DH参数）, Change Cipher Spec, Encrypted Handshake Message<br>180.97.33.107    192.168.1.5    TLSv1.2        Change Cipher Spec, Encrypted Handshake Message</p>
-<p>Curl -v 显示交互过程</p>
-<p>* TLSv1.2 (OUT), TLS handshake, Client hello (1):<br>* TLSv1.2 (IN), TLS handshake, Server hello (2):<br>* NPN, negotiated HTTP1.1<br>* TLSv1.2 (IN), TLS handshake, Certificate (11):<br>* TLSv1.2 (IN), TLS handshake, Server key exchange (12):<br>* TLSv1.2 (IN), TLS handshake, Server finished (14):<br>* TLSv1.2 (OUT), TLS handshake, Client key exchange (16):<br>* TLSv1.2 (OUT), TLS change cipher, Client hello (1):<br>* TLSv1.2 (OUT), TLS handshake, Unknown (67):<br>* TLSv1.2 (OUT), TLS handshake, Finished (20):<br>* TLSv1.2 (IN), TLS change cipher, Client hello (1):<br>* TLSv1.2 (IN), TLS handshake, Finished (20):<br>* SSL connection using TLSv1.2 / ECDHE-RSA-AES128-GCM-SHA256</p>
-<a id="more"></a>
-<h3 id="证书生成"><a href="#证书生成" class="headerlink" title="证书生成"></a>证书生成</h3><p>1，自签名证书</p>
-<p>生成私钥<br><code>openssl genrsa -des3 -out server.key 4096</code></p>
-<p>去除key口令<br><code>openssl rsa -in server.key -out server.key</code></p>
-<p>生成CSR<br><code>openssl req -new -key server.key -out server.csr -config openssl.cfg -subj &quot;/C=CN/ST=SC/L=CD/O=CerTest/OU=CerTest/CN=mm.ru0.pw&quot;</code></p>
-<p>CN = baidu.com 通用名称<br>O = BeiJing Baidu Netcom Science Technology Co., Ltd 组织单位<br>OU = service operation department. 组织<br>L = beijing 城市<br>S = beijing 省/州名<br>C = CN 国家/地区</p>
-<p>生成自签名证书<br><code>openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt</code></p>
-<blockquote>
-<p>openssl 生成私钥，通过私钥生成csr。权威证书机构通过这两个文件给你生成cer证书文件。但自建CA可为自己的请求签发证书，当然这是不可信的。当将CA导入“受信任的根证书颁发机构”后CA便认为该证书是可信的了。burp：8080的证书导入系统后相当于自己信任了自己。</p>
-</blockquote>
-<p>2，自建CA签发证书</p>
-<p>Step1:生成根CA</p>
-<p>生成随机数<br><code>openssl rand -out private/.rand 1000</code></p>
-<p>生成私钥<br><code>openssl genrsa -aes256 -out cakey.pem 4096</code></p>
-<p>生成CSR<br><code>openssl req -new -key cakey.pem -out ca.csr -subj &quot;/C=CN/ST=SC/O=CerTest/OU=Test Certificate Authority/CN=Test Root CA&quot; -config openssl.cfg</code></p>
-<p>自签发根证书v3<br><code>openssl x509 -req -days 365 -sha256 -extfile openssl.cfg -extensions v3_ca -signkey cakey.pem -in ca.csr -out ca.crt</code></p>
-<p>Step2:生成服务端证书<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">openssl genrsa -aes256 -out server-key.pem 2048</div><div class="line">openssl req -new -key server-key.pem -out server.csr -subj "/O=CerTest/OU=Test Certificate Authority/CN=*.baidu.com" -config openssl.cfg</div></pre></td></tr></table></figure></p>
-<p>Step3:签发证书<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">openssl x509 -req -days 365 -sha256 -extfile openssl.cfg -extensions v3_req -CA ca.crt -CAkey cakey.pem -CAserial ca.srl -CAcreateserial -in server.csr -out server.crt</div></pre></td></tr></table></figure></p>
-<p>？<br>openssl ca -in server.csr -out server.crt -cert ca.crt -keyfile cakey.pem -extfile openssl.cfg -extensions v3_req</p>
-<p>转换成PKCS12格式供Burp使用<br><code>openssl pkcs12 -export -inkey server-key.pem -in server.crt -out server.pfx</code></p>
-<p><img src="http://i.imgur.com/RdLCQVe.png" alt=""></p>
-<p>将CA导入受信任的根证书颁发机构后若火狐仍不信任则在火狐证书管理器中对其编辑信任。</p>
-<p><img src="http://i.imgur.com/A3FSl0q.png" alt=""></p>
-<p>Chrome https代理死活出错解决办法</p>
-<p>Chrome -&gt; Fiddler -&gt; Burp</p>
-<p>配置Fiddler Gateway指向Burp</p>
-<p>Manual Proxy Configuration:<br><a href="http://127.0.01:8080" target="_blank" rel="external">http://127.0.01:8080</a></p>
-]]></content>
-      
-        
-    </entry>
-    
-    <entry>
       <title><![CDATA[XSS]]></title>
       <url>/2015/04/08/XSS/</url>
       <content type="html"><![CDATA[<h1 id="Cross-site-Scripting-XSS-跨站脚本"><a href="#Cross-site-Scripting-XSS-跨站脚本" class="headerlink" title="Cross-site Scripting (XSS) 跨站脚本"></a>Cross-site Scripting (XSS) 跨站脚本</h1><p>恶意代码注入</p>
@@ -1053,6 +1053,53 @@
 <p>2. getJSON<br><figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$.getJSON(<span class="string">"http://www.runoob.com/try/ajax/jsonp.php?jsoncallback=?"</span>, <span class="function"><span class="keyword">function</span>(<span class="params">data</span>)</span>&#123; <span class="comment">// 对返回的json的处理代码 &#125;);</span></div></pre></td></tr></table></figure></p>
 <p>3. iframe</p>
 <h4 id="跨域策略文件"><a href="#跨域策略文件" class="headerlink" title="跨域策略文件"></a>跨域策略文件</h4><p>crossdomain.xml</p>
+]]></content>
+      
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[SSL协议]]></title>
+      <url>/2015/04/08/SSL/</url>
+      <content type="html"><![CDATA[<p>SSL (Secure Socket Layer)安全套接字层协议<br>    TLS (Transport Layer Security)传输层安全协议</p>
+<p><img src="https://blog.cloudflare.com/content/images/2014/Sep/keyless-comic-v1.gif" alt=""></p>
+<p>第一步，爱丽丝给出协议版本号、一个客户端生成的随机数（Client random），以及客户端支持的加密方法。<br>第二步，鲍勃确认双方使用的加密方法，并给出数字证书、以及一个服务器生成的随机数（Server random）。<br>第三步，爱丽丝确认数字证书有效，然后生成一个新的随机数（Premaster secret），并使用数字证书中的公钥，加密这个随机数，发给鲍勃。<br>第四步，鲍勃使用自己的私钥，获取爱丽丝发来的随机数（即Premaster secret）。<br>第五步，爱丽丝和鲍勃根据约定的加密方法，使用前面的三个随机数，生成”对话密钥”（session key），用来加密接下来的整个对话过程。</p>
+<p><img src="https://blog.cloudflare.com/content/images/2014/Sep/ssl_handshake_rsa.jpg" alt=""></p>
+<p>Tip:<br>1，生成对话密钥一共需要三个随机数，第三个发出的随机数是用服务端公钥加密的，除了客户端知道和服务端能解密出来外其他人不知道。<br>2，握手之后的对话使用”对话密钥”加密（对称加密），服务器的公钥和私钥只用于加密和解密”premaster secret”（非对称加密），无其他作用。<br>3，服务器公钥放在服务器的数字证书之中。</p>
+<p>Diffie-Hellman</p>
+<p><img src="https://blog.cloudflare.com/content/images/2014/Sep/ssl_handshake_diffie_hellman.jpg" alt=""></p>
+<p>curl -k <a href="https://www.baidu.com/img/baidu_jgylogo3.gif" target="_blank" rel="external">https://www.baidu.com/img/baidu_jgylogo3.gif</a></p>
+<p>Wireshark</p>
+<p>192.168.1.5    180.97.33.107 SSL Client Hello<br>180.97.33.107    192.168.1.5    TLSv1.2        Server Hello<br>180.97.33.107    192.168.1.5    TLSv1.2        Certificate, Server Key Exchange（服务端DH参数）, Server Hello Done<br>192.168.1.5    180.97.33.107    TLSv1.2     Client Key Exchange（客户端DH参数）, Change Cipher Spec, Encrypted Handshake Message<br>180.97.33.107    192.168.1.5    TLSv1.2        Change Cipher Spec, Encrypted Handshake Message</p>
+<p>Curl -v 显示交互过程</p>
+<p>* TLSv1.2 (OUT), TLS handshake, Client hello (1):<br>* TLSv1.2 (IN), TLS handshake, Server hello (2):<br>* NPN, negotiated HTTP1.1<br>* TLSv1.2 (IN), TLS handshake, Certificate (11):<br>* TLSv1.2 (IN), TLS handshake, Server key exchange (12):<br>* TLSv1.2 (IN), TLS handshake, Server finished (14):<br>* TLSv1.2 (OUT), TLS handshake, Client key exchange (16):<br>* TLSv1.2 (OUT), TLS change cipher, Client hello (1):<br>* TLSv1.2 (OUT), TLS handshake, Unknown (67):<br>* TLSv1.2 (OUT), TLS handshake, Finished (20):<br>* TLSv1.2 (IN), TLS change cipher, Client hello (1):<br>* TLSv1.2 (IN), TLS handshake, Finished (20):<br>* SSL connection using TLSv1.2 / ECDHE-RSA-AES128-GCM-SHA256</p>
+<a id="more"></a>
+<h3 id="证书生成"><a href="#证书生成" class="headerlink" title="证书生成"></a>证书生成</h3><p>1，自签名证书</p>
+<p>生成私钥<br><code>openssl genrsa -des3 -out server.key 4096</code></p>
+<p>去除key口令<br><code>openssl rsa -in server.key -out server.key</code></p>
+<p>生成CSR<br><code>openssl req -new -key server.key -out server.csr -config openssl.cfg -subj &quot;/C=CN/ST=SC/L=CD/O=CerTest/OU=CerTest/CN=mm.ru0.pw&quot;</code></p>
+<p>CN = baidu.com 通用名称<br>O = BeiJing Baidu Netcom Science Technology Co., Ltd 组织单位<br>OU = service operation department. 组织<br>L = beijing 城市<br>S = beijing 省/州名<br>C = CN 国家/地区</p>
+<p>生成自签名证书<br><code>openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt</code></p>
+<blockquote>
+<p>openssl 生成私钥，通过私钥生成csr。权威证书机构通过这两个文件给你生成cer证书文件。但自建CA可为自己的请求签发证书，当然这是不可信的。当将CA导入“受信任的根证书颁发机构”后CA便认为该证书是可信的了。burp：8080的证书导入系统后相当于自己信任了自己。</p>
+</blockquote>
+<p>2，自建CA签发证书</p>
+<p>Step1:生成根CA</p>
+<p>生成随机数<br><code>openssl rand -out private/.rand 1000</code></p>
+<p>生成私钥<br><code>openssl genrsa -aes256 -out cakey.pem 4096</code></p>
+<p>生成CSR<br><code>openssl req -new -key cakey.pem -out ca.csr -subj &quot;/C=CN/ST=SC/O=CerTest/OU=Test Certificate Authority/CN=Test Root CA&quot; -config openssl.cfg</code></p>
+<p>自签发根证书v3<br><code>openssl x509 -req -days 365 -sha256 -extfile openssl.cfg -extensions v3_ca -signkey cakey.pem -in ca.csr -out ca.crt</code></p>
+<p>Step2:生成服务端证书<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">openssl genrsa -aes256 -out server-key.pem 2048</div><div class="line">openssl req -new -key server-key.pem -out server.csr -subj "/O=CerTest/OU=Test Certificate Authority/CN=*.baidu.com" -config openssl.cfg</div></pre></td></tr></table></figure></p>
+<p>Step3:签发证书<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">openssl x509 -req -days 365 -sha256 -extfile openssl.cfg -extensions v3_req -CA ca.crt -CAkey cakey.pem -CAserial ca.srl -CAcreateserial -in server.csr -out server.crt</div></pre></td></tr></table></figure></p>
+<p>？<br>openssl ca -in server.csr -out server.crt -cert ca.crt -keyfile cakey.pem -extfile openssl.cfg -extensions v3_req</p>
+<p>转换成PKCS12格式供Burp使用<br><code>openssl pkcs12 -export -inkey server-key.pem -in server.crt -out server.pfx</code></p>
+<p><img src="http://i.imgur.com/RdLCQVe.png" alt=""></p>
+<p>将CA导入受信任的根证书颁发机构后若火狐仍不信任则在火狐证书管理器中对其编辑信任。</p>
+<p><img src="http://i.imgur.com/A3FSl0q.png" alt=""></p>
+<p>Chrome https代理死活出错解决办法</p>
+<p>Chrome -&gt; Fiddler -&gt; Burp</p>
+<p>配置Fiddler Gateway指向Burp</p>
+<p>Manual Proxy Configuration:<br><a href="http://127.0.01:8080" target="_blank" rel="external">http://127.0.01:8080</a></p>
 ]]></content>
       
         
