@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://ruos.org/2015/04/08/SSL/</loc>
+    
+    <lastmod>2020-08-26T11:02:51.467Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://ruos.org/2018/11/02/HTTPS%E5%8D%95%E5%90%91%E5%8F%8C%E5%90%91%E8%AE%A4%E8%AF%81/</loc>
     
     <lastmod>2020-04-29T04:53:52.450Z</lastmod>
@@ -96,13 +103,6 @@
     <loc>http://ruos.org/2017/11/01/SPNs/</loc>
     
     <lastmod>2017-11-01T06:15:10.914Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://ruos.org/2015/04/08/SSL/</loc>
-    
-    <lastmod>2017-11-01T02:19:19.137Z</lastmod>
     
   </url>
   
